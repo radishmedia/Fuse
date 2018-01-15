@@ -582,6 +582,10 @@ var Fuse = function () {
         sortFn = _ref$sortFn === undefined ? function (a, b) {
       return a.score - b.score;
     } : _ref$sortFn,
+        _ref$scoreFn = _ref.scoreFn,
+        scoreFn = _ref$scoreFn === undefined ? function (score, item) {
+      return score;
+    } : _ref$scoreFn,
         _ref$tokenize = _ref.tokenize,
         tokenize = _ref$tokenize === undefined ? false : _ref$tokenize,
         _ref$matchAllTokens = _ref.matchAllTokens,
@@ -611,6 +615,7 @@ var Fuse = function () {
       shouldSort: shouldSort,
       getFn: getFn,
       sortFn: sortFn,
+      scoreFn: scoreFn,
       verbose: verbose,
       tokenize: tokenize,
       matchAllTokens: matchAllTokens
@@ -896,7 +901,10 @@ var Fuse = function () {
           }
         }
 
-        results[i].score = bestScore === 1 ? totalScore / scoreLen : bestScore;
+        //results[i].score = bestScore === 1 ? totalScore / scoreLen : bestScore
+        var preScore = bestScore === 1 ? totalScore / scoreLen : bestScore;
+        results[i].originalScore = preScore;
+        results[i].score = this.options.scoreFn(preScore, results[i].item);
 
         this._log(results[i]);
       }
@@ -946,14 +954,26 @@ var Fuse = function () {
       if (this.options.includeScore) {
         transformers.push(function (result, data) {
           data.score = result.score;
+          data.originalScore = result.originalScore;
         });
       }
 
       for (var i = 0, len = results.length; i < len; i += 1) {
         var result = results[i];
 
+        // if (this.options.id) {
+        //   result.item = this.options.getFn(result.item, this.options.id)[0]
+        // }
         if (this.options.id) {
-          result.item = this.options.getFn(result.item, this.options.id)[0];
+          if (isArray(this.options.id)) {
+            var itemArray = [];
+            for (var j = 0, _len2 = this.options.id.length; j < _len2; j += 1) {
+              itemArray.push(this.options.getFn(result.item, this.options.id[j])[0]);
+            }
+            result.item = itemArray;
+          } else {
+            result.item = this.options.getFn(result.item, this.options.id)[0];
+          }
         }
 
         if (!transformers.length) {
@@ -965,8 +985,8 @@ var Fuse = function () {
           item: result.item
         };
 
-        for (var j = 0, _len2 = transformers.length; j < _len2; j += 1) {
-          transformers[j](result, data);
+        for (var _j = 0, _len3 = transformers.length; _j < _len3; _j += 1) {
+          transformers[_j](result, data);
         }
 
         finalOutput.push(data);

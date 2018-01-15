@@ -41,6 +41,7 @@ class Fuse {
     // When true, the search algorithm will search individual words **and** the full string,
     // computing the final score as a function of both. Note that when `tokenize` is `true`,
     // the `threshold`, `distance`, and `location` are inconsequential for individual tokens.
+    scoreFn = (score, item) => (score),
     tokenize = false,
     // When true, the result set will only include records that match all tokens. Will only work
     // if `tokenize` is also true.
@@ -68,6 +69,7 @@ class Fuse {
       shouldSort,
       getFn,
       sortFn,
+      scoreFn,
       verbose,
       tokenize,
       matchAllTokens
@@ -325,7 +327,10 @@ class Fuse {
         }
       }
 
-      results[i].score = bestScore === 1 ? totalScore / scoreLen : bestScore
+      //results[i].score = bestScore === 1 ? totalScore / scoreLen : bestScore
+      let preScore = bestScore === 1 ? totalScore / scoreLen : bestScore
+      results[i].originalScore = preScore
+      results[i].score = this.options.scoreFn(preScore, results[i].item)
 
       this._log(results[i])
     }
@@ -373,14 +378,26 @@ class Fuse {
     if (this.options.includeScore) {
       transformers.push((result, data) => {
         data.score = result.score
+        data.originalScore = result.originalScore
       })
     }
 
     for (let i = 0, len = results.length; i < len; i += 1) {
       const result = results[i]
 
+      // if (this.options.id) {
+      //   result.item = this.options.getFn(result.item, this.options.id)[0]
+      // }
       if (this.options.id) {
-        result.item = this.options.getFn(result.item, this.options.id)[0]
+        if (isArray(this.options.id)) {
+          let itemArray = []
+          for (let j = 0, len = this.options.id.length; j < len; j += 1) {
+            itemArray.push(this.options.getFn(result.item, this.options.id[j])[0])
+          }
+          result.item = itemArray
+        } else {
+          result.item = this.options.getFn(result.item, this.options.id)[0]
+        }
       }
 
       if (!transformers.length) {
