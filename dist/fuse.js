@@ -1,5 +1,5 @@
 /*!
- * Fuse.js v3.2.0 - Lightweight fuzzy-search (http://fusejs.io)
+ * Fuse.js v3.2.1 - Lightweight fuzzy-search (http://fusejs.io)
  * 
  * Copyright (c) 2012-2017 Kirollos Risk (http://kiro.me)
  * All Rights Reserved. Apache Software License 2.0
@@ -904,6 +904,7 @@ var Fuse = function () {
         //results[i].score = bestScore === 1 ? totalScore / scoreLen : bestScore
         var preScore = bestScore === 1 ? totalScore / scoreLen : bestScore;
         results[i].originalScore = preScore;
+        console.log(results[i].item);
         results[i].score = this.options.scoreFn(preScore, results[i].item);
 
         this._log(results[i]);
@@ -968,7 +969,12 @@ var Fuse = function () {
           if (isArray(this.options.id)) {
             var itemArray = [];
             for (var j = 0, _len2 = this.options.id.length; j < _len2; j += 1) {
-              itemArray.push(this.options.getFn(result.item, this.options.id[j])[0]);
+              var getResult = this.options.getFn(result.item, this.options.id[j]);
+              if (isArray(getResult)) {
+                itemArray.push(this.options.getFn(result.item, this.options.id[j]));
+              } else {
+                itemArray.push(this.options.getFn(result.item, this.options.id[j])[0]);
+              }
             }
             result.item = itemArray;
           } else {
